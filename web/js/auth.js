@@ -24,7 +24,7 @@ function getCurrentUser() {
 function logout() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-  window.location.href = "/";
+  window.location.href = "/login";
 }
 
 // Helper untuk fetch API dengan header Authorization Bearer
@@ -38,9 +38,16 @@ async function authFetch(url, options = {}) {
 
   const response = await fetch(url, { ...options, headers });
   if (response.status === 401) {
-    // Sesi token tidak valid atau kedaluwarsa
-    logout();
-    throw new Error("Sesi login berakhir. Silakan masuk kembali.");
+    // Sesi token tidak valid atau kedaluwarsa: bersihkan sesi
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    
+    // Jangan redirect otomatis jika sedang berada di "/" atau "/login"
+    // Ini mencegah infinite reload loop yang membekukan browser
+    if (token && window.location.pathname !== "/" && window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
+    throw new Error("Sesi login berakhir atau belum masuk.");
   }
   return response;
 }
@@ -75,17 +82,29 @@ function initRegisterForm() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Gagal melakukan pendaftaran");
+        throw new Error(data.error || "Gagal melakukan registrasi");
       }
 
-      showAlert("Pendaftaran berhasil! Mengalihkan ke halaman login...", true);
+      // Auto login setelah registrasi berhasil
+      showAlert("Registrasi properti berhasil! Membuka halaman masuk...", true);
       setTimeout(() => {
         window.location.href = "/login";
-      }, 1500);
+      }, 1000);
     } catch (err) {
       showAlert(err.message, false);
     }
   });
+
+  function showAlert(msg, isSuccess = false) {
+    if (!alertEl) return;
+    if (!msg) {
+      alertEl.style.display = "none";
+      return;
+    }
+    alertEl.textContent = msg;
+    alertEl.className = `alert ${isSuccess ? "alert-success" : "alert-danger"}`;
+    alertEl.style.display = "block";
+  }
 }
 
 // Inisialisasi form Login (di halaman login.html)
@@ -95,9 +114,9 @@ function initLoginForm() {
 
   if (!form) return;
 
-  // Jika sudah login, redirect ke workspace portal
+  // Jika sudah login, redirect ke halaman utama
   if (getToken()) {
-    window.location.href = "/?view=portal";
+    window.location.href = "/";
     return;
   }
 
@@ -117,31 +136,29 @@ function initLoginForm() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Gagal masuk ke akun");
+        throw new Error(data.error || "Login gagal, silakan periksa email dan kata sandi");
       }
 
-      // Simpan JWT di localStorage
+      // Simpan token JWT dan informasi pengguna
       setAuthSession(data.token, data.user);
-      showAlert("Login berhasil! Mengalihkan ke Workspace...", true);
+
+      showAlert("Login berhasil! Membuka dashboard...", true);
       setTimeout(() => {
-        window.location.href = "/?view=portal";
-      }, 800);
+        window.location.href = "/";
+      }, 500);
     } catch (err) {
       showAlert(err.message, false);
     }
   });
-}
 
-function showAlert(message, isSuccess = false) {
-  const alertEl = document.getElementById("alertMessage");
-  if (!alertEl) return;
-
-  if (!message) {
-    alertEl.style.display = "none";
-    return;
+  function showAlert(msg, isSuccess = false) {
+    if (!alertEl) return;
+    if (!msg) {
+      alertEl.style.display = "none";
+      return;
+    }
+    alertEl.textContent = msg;
+    alertEl.className = `alert ${isSuccess ? "alert-success" : "alert-danger"}`;
+    alertEl.style.display = "block";
   }
-
-  alertEl.textContent = message;
-  alertEl.className = isSuccess ? "alert alert-success" : "alert alert-danger";
-  alertEl.style.display = "block";
 }

@@ -53,7 +53,7 @@ function renderRooms(rooms) {
         <td><strong>${escapeHtml(room.room_number)}</strong></td>
         <td>${escapeHtml(room.type)}</td>
         <td>${formattedPrice}</td>
-        <td><span class="badge ${badgeClass}">${escapeHtml(room.status)}</span></td>
+        <td><span class="badge ${badgeClass}"><span class="status-dot"></span> ${escapeHtml(room.status)}</span></td>
         <td><small style="color: var(--text-muted);">${escapeHtml(room.description || "-")}</small></td>
         <td>
           <button class="btn-sm btn-outline" onclick="openEditRoomModal(${room.id})">Edit</button>

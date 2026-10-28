@@ -23,8 +23,14 @@ function renderDashboard(data) {
   const kpiOccupancy = document.getElementById("kpiOccupancy");
   if (kpiOccupancy) kpiOccupancy.textContent = `${data.occupancy_rate || 0}%`;
 
+  const dashOccupancy = document.getElementById("dashOccupancy");
+  if (dashOccupancy) dashOccupancy.textContent = `${data.occupancy_rate || 0}%`;
+
   const kpiADR = document.getElementById("kpiADR");
   if (kpiADR) kpiADR.textContent = formatIDR(data.adr || 0);
+
+  const dashADR = document.getElementById("dashADR");
+  if (dashADR) dashADR.textContent = formatIDR(data.adr || 0);
 
   const kpiRevPAR = document.getElementById("kpiRevPAR");
   if (kpiRevPAR) kpiRevPAR.textContent = formatIDR(data.revpar || 0);
@@ -32,6 +38,9 @@ function renderDashboard(data) {
   // 2. Ringkasan Keuangan (Laba / Rugi)
   const metricRevenue = document.getElementById("metricRevenue");
   if (metricRevenue) metricRevenue.textContent = formatIDR(data.room_revenue || 0);
+
+  const dashRevenue = document.getElementById("dashRevenue");
+  if (dashRevenue) dashRevenue.textContent = formatIDR(data.room_revenue || 0);
 
   const metricExpenses = document.getElementById("metricExpenses");
   if (metricExpenses) metricExpenses.textContent = formatIDR(data.total_expenses || 0);
@@ -48,6 +57,12 @@ function renderDashboard(data) {
       badgeNet.className = net >= 0 ? "badge badge-success" : "badge badge-danger";
     }
   }
+
+  const dashNetIncome = document.getElementById("dashNetIncome");
+  if (dashNetIncome) dashNetIncome.textContent = formatIDR(data.net_income || 0);
+
+  const dashCheckedIn = document.getElementById("dashCheckedIn");
+  if (dashCheckedIn) dashCheckedIn.textContent = data.occupied_rooms || 0;
 
   // 3. Status Inventaris Kamar
   const invTotal = document.getElementById("invTotalRooms");
@@ -80,7 +95,7 @@ function renderDashboard(data) {
             <td><strong style="color: var(--danger);">${formatIDR(cat.total)}</strong></td>
             <td>
               <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <div style="flex: 1; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="flex: 1; background: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden;">
                   <div style="background: var(--danger); width: ${pct}%; height: 100%;"></div>
                 </div>
                 <small style="color: var(--text-muted); width: 45px;">${pct}%</small>

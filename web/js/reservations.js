@@ -75,21 +75,21 @@ function renderReservations(reservations) {
         <td>
           <div>${formatIDR(r.total_amount)}</div>
           <div style="margin-top: 0.2rem;">
-            <span class="badge badge-secondary" style="font-size: 0.7rem;">💳 ${escapeHtml(paymentMethod)}</span>
+            <span class="badge badge-secondary" style="font-size: 0.725rem;">${escapeHtml(paymentMethod)}</span>
           </div>
           <small style="color: var(--text-muted);">Sisa: ${formatIDR(r.remaining_amount)}</small>
         </td>
         <td><span class="badge ${payBadge}">${escapeHtml(r.payment_status)}</span></td>
         <td><span class="badge ${statusBadge}">${escapeHtml(r.status)}</span></td>
         <td>
-          <span class="badge ${reminderBadge.class}">${reminderBadge.label}</span>
+          <span class="badge ${reminderBadge.class}"><span class="status-dot"></span> ${reminderBadge.label}</span>
           ${r.reminder_sent_at ? `<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">${r.reminder_sent_at.substring(11, 16)} WIB</div>` : ''}
         </td>
         <td>
-          <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
-            <button class="btn-sm btn-outline" onclick="openInvoiceModal(${r.id})">🧾 Nota</button>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+            <button class="btn-sm btn-outline" onclick="openInvoiceModal(${r.id})">Nota</button>
             ${r.status === 'Check-in' ? `
-              <button class="btn-sm btn-outline" style="color: #047857; border-color: #059669;" onclick="sendReminder(${r.id}, '${escapeHtml(r.guest_name)}')">🔔 Remind</button>
+              <button class="btn-sm btn-outline" style="color: var(--primary); border-color: var(--primary);" onclick="sendReminder(${r.id}, '${escapeHtml(r.guest_name)}')">Remind</button>
               <button class="btn-sm btn-primary" onclick="checkoutGuest(${r.id}, '${escapeHtml(r.guest_name)}')">Check-out</button>
               <button class="btn-sm btn-danger" onclick="cancelGuest(${r.id}, '${escapeHtml(r.guest_name)}')">Batal</button>
             ` : ''}
@@ -98,6 +98,60 @@ function renderReservations(reservations) {
       </tr>
     `;
   }).join("");
+
+  // Update tabel ringkasan reservasi di tab Dashboard (jika ada)
+  const quickBody = document.getElementById("dashboardQuickReservations");
+  if (quickBody) {
+    if (reservations.length === 0) {
+      quickBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Belum ada reservasi aktif</td></tr>`;
+    } else {
+      const recent = reservations.slice(0, 5);
+      quickBody.innerHTML = recent.map(r => {
+        const inDate = r.check_in_date.substring(0, 10);
+        const outDate = r.check_out_date.substring(0, 10);
+        const roomNumber = r.room ? r.room.room_number : `#${r.room_id}`;
+        const roomType = r.room ? r.room.type : "Room";
+        const statusBadge = getReservationBadge(r.status);
+        const payBadge = getPaymentBadge(r.payment_status);
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(r.invoice_number)}</strong></td>
+            <td>
+              <div><strong>${escapeHtml(r.guest_name)}</strong></div>
+              <small style="color: var(--text-muted);">${escapeHtml(r.guest_phone || "-")}</small>
+            </td>
+            <td>Kamar ${escapeHtml(roomNumber)} <small style="color: var(--text-muted);">(${escapeHtml(roomType)})</small></td>
+            <td>${inDate} s/d ${outDate}</td>
+            <td><span class="badge badge-secondary">${escapeHtml(r.payment_method || "Tunai")}</span></td>
+            <td><span class="badge ${payBadge}">${escapeHtml(r.payment_status)}</span></td>
+            <td><span class="badge ${statusBadge}"><span class="status-dot"></span> ${escapeHtml(r.status)}</span></td>
+            <td>
+              <button class="btn-sm btn-outline" onclick="openInvoiceModal(${r.id})">Nota</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  // Update Jadwal Checkout di panel samping kanan (15 Menit Sebelum Checkout)
+  const timeline = document.getElementById("checkoutTimelineList");
+  if (timeline) {
+    const checkouts = reservations.filter(r => r.status === "Check-in").slice(0, 4);
+    if (checkouts.length > 0) {
+      timeline.innerHTML = checkouts.map(r => `
+        <div class="timeline-item">
+          <div class="timeline-time-box">12:00 WIB</div>
+          <div class="timeline-info">
+            <strong>Kamar ${r.room ? r.room.room_number : r.room_id} &bull; ${escapeHtml(r.guest_name)}</strong>
+            <small>${r.reminder_status === "Terkirim" ? "Pengingat terkirim via WhatsApp" : "Pengingat 15 menit belum dikirim"}</small>
+          </div>
+          <button class="btn-sm btn-outline" style="padding: 0.2rem 0.5rem;" onclick="sendReminder(${r.id}, '${escapeHtml(r.guest_name)}')">Remind</button>
+        </div>
+      `).join("");
+    }
+  }
 }
 
 function getReservationBadge(status) {
@@ -121,11 +175,11 @@ function getPaymentBadge(status) {
 function getReminderBadge(status) {
   switch (status) {
     case "Terkirim":
-      return { class: "badge-success", label: "🟢 Terkirim" };
+      return { class: "badge-success", label: "Terkirim" };
     case "Gagal":
-      return { class: "badge-danger", label: "🔴 Gagal" };
+      return { class: "badge-danger", label: "Gagal" };
     default:
-      return { class: "badge-secondary", label: "⚪ Belum Dikirim" };
+      return { class: "badge-secondary", label: "Menunggu" };
   }
 }
 
